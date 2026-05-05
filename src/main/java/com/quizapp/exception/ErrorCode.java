@@ -1,0 +1,24 @@
+package com.quizapp.exception;
+
+public enum ErrorCode {
+    QUIZ_NOT_FOUND("QUIZ_NOT_FOUND"),
+    SESSION_NOT_FOUND("SESSION_NOT_FOUND"),
+    QUESTION_NOT_FOUND("QUESTION_NOT_FOUND"),
+    STUDENT_NOT_FOUND("STUDENT_NOT_FOUND"),
+    SESSION_INACTIVE("SESSION_INACTIVE"),
+    DUPLICATE_ANSWER("DUPLICATE_ANSWER"),
+    INVALID_SESSION_CODE("INVALID_SESSION_CODE"),
+    INVALID_OPTION("INVALID_OPTION"),
+    SESSION_CODE_GENERATION_FAILED("SESSION_CODE_GENERATION_FAILED"),
+    INTERNAL_SERVER_ERROR("INTERNAL_SERVER_ERROR");
+    
+    private final String code;
+    
+    ErrorCode(String code) {
+        this.code = code;
+    }
+    
+    public String getCode() {
+        return code;
+    }
+}
