@@ -6,6 +6,7 @@ import com.quizapp.exception.ErrorCode;
 import com.quizapp.exception.QuizAppException;
 import com.quizapp.model.Answer;
 import com.quizapp.model.Question;
+import com.quizapp.model.Session;
 import com.quizapp.model.Student;
 import com.quizapp.repository.AnswerRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,12 +31,31 @@ public class AnswerService {
     public Answer submitAnswer(AnswerRequest request) {
         log.info("Submitting answer for student: {}, question: {}", request.getStudentId(), request.getQuestionId());
         
-        // Validate session is active
+        // Validate session is active and fetch session
+        Session session = sessionService.getSessionByCode(request.getSessionCode());
         sessionService.validateSessionIsActive(request.getSessionCode());
         
         // Get student and question
         Student student = studentService.getStudentById(request.getStudentId());
         Question question = questionService.getQuestionById(request.getQuestionId());
+        
+        // Validate student belongs to the session referenced by the session code
+        if (!Objects.equals(student.getSession().getId(), session.getId())) {
+            throw new QuizAppException(
+                "Student does not belong to the session code provided",
+                ErrorCode.INVALID_SESSION_CODE,
+                400
+            );
+        }
+        
+        // Validate the question belongs to the quiz used by the session
+        if (!Objects.equals(question.getQuiz().getId(), session.getQuiz().getId())) {
+            throw new QuizAppException(
+                "Question does not belong to the active session's quiz",
+                ErrorCode.QUESTION_NOT_FOUND,
+                400
+            );
+        }
         
         // Validate option is within range
         if (request.getSelectedOption() < 0 || request.getSelectedOption() >= question.getOptions().size()) {
@@ -61,17 +81,18 @@ public class AnswerService {
         }
         
         // Create and save answer
+        boolean isCorrect = question.getCorrectAnswer() != null && request.getSelectedOption().equals(question.getCorrectAnswer());
         Answer answer = Answer.builder()
             .student(student)
             .question(question)
             .selectedOption(request.getSelectedOption())
-            .isCorrect(request.getSelectedOption().equals(question.getCorrectAnswer()))
+            .isCorrect(isCorrect)
             .build();
         
         Answer savedAnswer = answerRepository.save(answer);
         
         // Update student's correct answer count if answer is correct
-        if (Boolean.TRUE.equals(savedAnswer.getIsCorrect())) {
+        if (isCorrect) {
             student.setCorrectAnswers(student.getCorrectAnswers() + 1);
             studentService.updateStudent(student);
         }
